@@ -2,12 +2,11 @@ const express = require('express');
 const router = express.Router();
 const aiController = require('../controllers/aiController');
 const { authenticateToken } = require('../middleware/auth');
-
 /**
  * @swagger
  * /api/ai/analyze/{subtitleId}:
- *   get:
- *     summary: Analyze subtitles and generate chapter timestamps
+ *   post:
+ *     summary: Analyze subtitles and generate logical chapter timestamps using Gemini AI
  *     tags: [AI]
  *     security:
  *       - bearerAuth: []
@@ -18,6 +17,17 @@ const { authenticateToken } = require('../middleware/auth');
  *         schema:
  *           type: string
  *         description: ID of the subtitle to analyze
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               chapterCount:
+ *                 type: integer
+ *                 description: Optional number of chapters to generate
+ *                 example: 7
  *     responses:
  *       200:
  *         description: Analysis successful
@@ -41,18 +51,20 @@ const { authenticateToken } = require('../middleware/auth');
  *                     properties:
  *                       timestamp:
  *                         type: string
+ *                         example: "00:00"
  *                       title:
  *                         type: string
+ *                         example: "Introduction"
  *       400:
- *         description: Invalid request
+ *         description: Invalid request (e.g., missing subtitle ID)
  *       401:
- *         description: Unauthorized
+ *         description: Unauthorized (missing or invalid token)
  *       404:
- *         description: Subtitles not found
+ *         description: Subtitle not found
  *       500:
- *         description: Server error
+ *         description: Server error during subtitle analysis
  */
-router.get('/analyze/:subtitleId', authenticateToken, aiController.analyzeSubtitles);
+router.post('/analyze/:subtitleId', authenticateToken, aiController.analyzeSubtitles);
 
 /**
  * @swagger

@@ -6,8 +6,7 @@
   "scripts": {
     "start": "node src/index.js",
     "dev": "nodemon src/index.js",
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "generate-docs": "node -e \"require('./src/config/generateOpenApi')\""
+    "docs": "node -e \"require('./src/config/generateOpenApi')\""
   },
   "dependencies": {
     "@google/genai": "^1.5.1",
@@ -23,7 +22,6 @@
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
     "winston": "^3.17.0",
-    "youtube-captions-scraper": "^1.0.3",
     "youtube-dl-exec": "^3.0.22"
   },
   "devDependencies": {

@@ -5,9 +5,50 @@ const { GoogleGenerativeAI } = require('@google/generative-ai');
 // Initialize Gemini
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
+/**
+ * Creates a formatted prompt for the Gemini model to generate video chapters.
+ * @param {string} transcript - The video transcript content.
+ * @param {number|string} [chapterCount] - The desired number of chapters.
+ * @returns {string} The formatted prompt string.
+ */
+const createChapterPrompt = (transcript, chapterCount) => {
+  // Default instruction if no specific chapter count is requested.
+  let chapterInstruction = `Keep the number of chapters between 5-10, only creating new chapters when there's a significant topic change.`;
+  let guidelines = `- Maximum 10 chapters`;
+
+  // If a specific, valid chapter count is provided, update the instruction.
+  const count = parseInt(chapterCount, 10);
+  if (!isNaN(count) && count > 0) {
+    chapterInstruction = `Create exactly ${count} logical chapters.`;
+    guidelines = `- Create exactly ${count} chapters`;
+  }
+
+  return `Analyze the following video transcript and create a minimal set of logical chapters. Focus only on major topic transitions and key points.
+${chapterInstruction}
+Format the response as a JSON array of objects with 'timestamp' and 'title' properties.
+Example format:
+[
+  {"timestamp": "00:00", "title": "Introduction"},
+  {"timestamp": "02:30", "title": "Main Topic"},
+  {"timestamp": "05:45", "title": "Conclusion"}
+]
+Guidelines:
+- Create only essential chapters
+- Use clear, concise titles
+- Only include timestamps for significant topic changes
+- Avoid creating too many small chapters
+${guidelines}
+
+Here's the transcript:
+
+${transcript}`;
+};
+
 const analyzeSubtitles = async (req, res) => {
   try {
     const { subtitleId } = req.params;
+    // Destructure chapterCount from the request body.
+    const { chapterCount } = req.body;
 
     if (!subtitleId) {
       return res.status(400).json({ error: 'Subtitle ID is required' });
@@ -47,26 +88,8 @@ const analyzeSubtitles = async (req, res) => {
       });
     }
 
-    // Prepare prompt for Gemini
-    const prompt = `Analyze the following video transcript and create a minimal set of logical chapters. Focus only on major topic transitions and key points.
-Keep the number of chapters between 3-10, only creating new chapters when there's a significant topic change.
-Format the response as a JSON array of objects with 'timestamp' and 'title' properties.
-Example format:
-[
-  {"timestamp": "00:00", "title": "Introduction"},
-  {"timestamp": "02:30", "title": "Main Topic"},
-  {"timestamp": "05:45", "title": "Conclusion"}
-]
-Guidelines:
-- Create only essential chapters
-- Use clear, concise titles
-- Only include timestamps for significant topic changes
-- Avoid creating too many small chapters
-- Maximum 10 chapters
-
-Here's the transcript:
-
-${subtitles.content}`;
+    // Prepare prompt for Gemini using the helper function
+    const prompt = createChapterPrompt(subtitles.content, chapterCount);
 
     // Get analysis from Gemini
     const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-lite" });
@@ -109,9 +132,9 @@ ${subtitles.content}`;
 
   } catch (error) {
     logger.error('Subtitle analysis error:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Failed to analyze subtitles',
-      details: error.message 
+      details: error.message
     });
   }
 };
@@ -192,6 +215,8 @@ const getAnalysis = async (req, res) => {
 const regenerateChapters = async (req, res) => {
   try {
     const { subtitleId } = req.params;
+    // Destructure chapterCount from the request body.
+    const { chapterCount } = req.body;
 
     if (!subtitleId) {
       return res.status(400).json({ error: 'Subtitle ID is required' });
@@ -214,26 +239,8 @@ const regenerateChapters = async (req, res) => {
       return res.status(404).json({ error: 'Subtitles not found' });
     }
 
-    // Prepare prompt for Gemini
-    const prompt = `Analyze the following video transcript and create a minimal set of logical chapters. Focus only on major topic transitions and key points.
-Keep the number of chapters between 3-10, only creating new chapters when there's a significant topic change.
-Format the response as a JSON array of objects with 'timestamp' and 'title' properties.
-Example format:
-[
-  {"timestamp": "00:00", "title": "Introduction"},
-  {"timestamp": "02:30", "title": "Main Topic"},
-  {"timestamp": "05:45", "title": "Conclusion"}
-]
-Guidelines:
-- Create only essential chapters
-- Use clear, concise titles
-- Only include timestamps for significant topic changes
-- Avoid creating too many small chapters
-- Maximum 10 chapters
-
-Here's the transcript:
-
-${subtitles.content}`;
+    // Prepare prompt for Gemini using the helper function
+    const prompt = createChapterPrompt(subtitles.content, chapterCount);
 
     // Get analysis from Gemini
     const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-lite" });
@@ -305,9 +312,9 @@ ${subtitles.content}`;
 
   } catch (error) {
     logger.error('Chapter regeneration error:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Failed to regenerate chapters',
-      details: error.message 
+      details: error.message
     });
   }
 };
@@ -317,4 +324,4 @@ module.exports = {
   listAnalyses,
   getAnalysis,
   regenerateChapters
-}; 
+};

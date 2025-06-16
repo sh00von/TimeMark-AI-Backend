@@ -28,7 +28,7 @@ app.use('/api/subtitles', subtitleRoutes);
 app.use('/api/ai', aiRoutes);
 
 // Swagger documentation
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(openapiSpec, {
+app.use('/', swaggerUi.serve, swaggerUi.setup(openapiSpec, {
   explorer: true,
   customCss: '.swagger-ui .topbar { display: none }',
   customSiteTitle: 'YouTube Subtitle API Documentation'
@@ -39,5 +39,5 @@ app.use(errorHandler);
 
 app.listen(PORT, () => {
   logger.info(`Server is running on port ${PORT}`);
-  logger.info(`API Documentation available at http://localhost:${PORT}/api-docs`);
+  logger.info(`API Documentation available at http://localhost:${PORT}/`);
 });

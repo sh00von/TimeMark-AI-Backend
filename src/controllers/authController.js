@@ -1,5 +1,6 @@
 const supabase = require('../config/supabase');
 const { logger } = require('../utils/logger');
+const jwt = require('jsonwebtoken');
 
 const login = async (req, res) => {
   try {
@@ -19,13 +20,28 @@ const login = async (req, res) => {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
+    const accessToken = data.session?.access_token;
+    if (!accessToken) {
+      return res.status(500).json({ error: 'Access token missing from session' });
+    }
+
+    // Manually verify the JWT using Supabase secret
+    let decodedToken;
+    try {
+      decodedToken = jwt.verify(accessToken, process.env.SUPABASE_JWT_SECRET);
+    } catch (verifyErr) {
+      logger.error('JWT verification failed:', verifyErr.message);
+      return res.status(401).json({ error: 'Invalid access token' });
+    }
+
     res.json({
-      access_token: data.session.access_token,
+      access_token: accessToken,
       user: {
         id: data.user.id,
         email: data.user.email,
         created_at: data.user.created_at
-      }
+      },
+      token_claims: decodedToken // include decoded token info
     });
 
   } catch (error) {
@@ -33,6 +49,7 @@ const login = async (req, res) => {
     res.status(500).json({ error: 'Login failed' });
   }
 };
+
 
 const register = async (req, res) => {
   try {
